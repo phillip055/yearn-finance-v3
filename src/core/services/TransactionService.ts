@@ -60,7 +60,19 @@ export class TransactionServiceImpl implements TransactionService {
       // const decodedData = contractIface.decodeFunctionData(methodName, unsignedTx.data!.toString());
       // console.log({ decodedData });
 
-      // TODO call contract verification here.
+      const yearn = this.yearnSdk.getInstanceOf(network);
+      // NOTE: what should happen if there no allowList? should we execute without validation?
+      if (yearn.services.allowList) {
+        const { success: isValid, error } = await yearn.services.allowList.validateCalldata(
+          contractAddress,
+          unsignedTx.data
+        );
+
+        if (!isValid) {
+          if (!error) throw new Error('Something went wrong on sdk validation');
+          throw new Error(error);
+        }
+      }
 
       const tx = await signer.sendTransaction(unsignedTx);
       return tx;
